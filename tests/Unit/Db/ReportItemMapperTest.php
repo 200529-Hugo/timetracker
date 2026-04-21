@@ -67,4 +67,21 @@ class ReportItemMapperTest extends TestCase {
         
         $mapper->report('user', 0, 0, [], [], [], 'day', '', '', false, 0, 100);
     }
+
+    public function testReportWithComplexFilters() {
+        $platform = $this->createMock(MySqlPlatform::class);
+        $mapper = $this->getMapperWithPlatform($platform);
+        
+        $stmt = $this->createMock(IPreparedStatement::class);
+        $this->db->expects($this->once())
+            ->method('prepare')
+            ->with($this->callback(function($sql) {
+                // Verify that BOTH project_id and client id filters are present in the SQL
+                return strpos($sql, 'wi.project_id in (?,?)') !== false && 
+                       strpos($sql, 'c.id in (?,?)') !== false;
+            }))
+            ->willReturn($stmt);
+        
+        $mapper->report('user', 0, 0, [1, 2], [10, 11], [], 'day', '', '', false, 0, 100);
+    }
 }

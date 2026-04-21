@@ -462,27 +462,41 @@ class AjaxControllerTest extends TestCase {
         $this->assertArrayHasKey('Tags', $response->getData());
     }
 
-    public function testGetReportWithProjectAccessButNoClientAccess() {
-        // Mock non-admin user
+    public function testGetReportWithMultipleSameNameProjectsAndTypoClientAccess() {
+        // SCENARIO:
+        // Project X (ID: 1, Name: "Project X", ClientID: 10) - User has Client access
+        // Project X (ID: 2, Name: "Project X", ClientID: 11) - Typo in Client name, User has NO Client access
+        // User has access to both PROJECTS but only CLIENT 10.
+        
         \OC_User::$isAdmin = false;
         
-        // Mock allowed projects: user has access to Project A (ID 1)
-        $p = new Project();
-        $p->id = 1;
-        $p->clientId = 10; // Project A belongs to Client X (ID 10)
+        $p1 = new Project();
+        $p1->id = 1;
+        $p1->name = "Project X";
+        $p1->clientId = 10;
+        
+        $p2 = new Project();
+        $p2->id = 2;
+        $p2->name = "Project X";
+        $p2->clientId = 11; // Typo client (e.g. "Client B ")
+        
+        // Mock allowed projects: user has access to BOTH projects
         $this->projectMapper->expects($this->once())
             ->method('findAll')
             ->with($this->userId)
-            ->willReturn([$p]);
+            ->willReturn([$p1, $p2]);
 
-        // Mock allowed clients: user has NO clients allowed
+        // Mock allowed clients: user has access ONLY to Client 10
+        $c1 = new Client();
+        $c1->id = 10;
         $this->clientMapper->expects($this->once())
             ->method('findAll')
             ->with($this->userId)
-            ->willReturn([]);
+            ->willReturn([$c1]);
 
-        // The expected behavior is that ReportItemMapper::report is called with Project 1 allowed
-        // AND its client (ID 10) should now also be allowed implicitly.
+        // The expected behavior is that ReportItemMapper::report is called with:
+        // filterProjectId including [1, 2]
+        // AND filterClientId including [10, 11] (implicitly including Client 11 from Project 2)
         $this->reportItemMapper->expects($this->once())
             ->method('report')
             ->with(
@@ -490,11 +504,11 @@ class AjaxControllerTest extends TestCase {
                 $this->anything(), // from
                 $this->anything(), // to
                 $this->callback(function($filter) {
-                    return in_array(1, $filter); // Project 1 should be allowed
+                    return in_array(1, $filter) && in_array(2, $filter); // Both projects allowed
                 }),
                 $this->callback(function($filter) {
-                    // FIX: Client 10 should now be in the filter!
-                    return in_array(10, $filter); 
+                    // BOTH clients should be in the filter now!
+                    return in_array(10, $filter) && in_array(11, $filter); 
                 })
             )
             ->willReturn([]);
