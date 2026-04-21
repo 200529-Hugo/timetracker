@@ -13,9 +13,10 @@ class ReportItemMapper extends CompatibleMapper {
     private $dbengine;
     public function __construct(IDBConnection $db) {
         $this->dbengine = 'MYSQL';
-        if (strpos(get_class($db->getDatabasePlatform()),'PostgreSQL') !== FALSE){
+        $platform = get_class($db->getDatabasePlatform());
+        if (stripos($platform, 'Postgre') !== FALSE){
             $this->dbengine = 'POSTGRES';
-        } else if (strpos(get_class($db->getDatabasePlatform()),'Sqlite') !== FALSE){
+        } elseif (stripos($platform, 'Sqlite') !== FALSE){
             $this->dbengine = 'SQLITE';
         }
         parent::__construct($db, 'timetracker_work_interval');

@@ -1,2 +1,21 @@
+# Build artifacts
+build/
 js/dist/
+
+# Dependencies
+vendor/
+node_modules/
 js/node_modules/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.phpunit.result.cache

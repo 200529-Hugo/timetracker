@@ -913,14 +913,24 @@ class AjaxController extends Controller {
 		if(!$this->isThisAdminUser()){
 			$allowedClients =  $this->clientMapper->findAll($this->userId);
 			$allowedClientsId = array_map(function($client){ return $client->id;}, $allowedClients );
+
+			$allowedProjects =  $this->projectMapper->findAll($this->userId);
+			$allowedProjectsId = array_map(function($project){ return $project->id;}, $allowedProjects );
+
+			// Implicitly allow clients of allowed projects
+			foreach ($allowedProjects as $project) {
+				if ($project->clientId !== null && !in_array($project->clientId, $allowedClientsId)) {
+					$allowedClientsId[] = $project->clientId;
+				}
+			}
+
 			if(empty($filterClientId)){
 				$filterClientId = $allowedClientsId;
 				$filterClientId[] = null; // allow null clientid
 			} else {
 				$filterClientId = array_intersect($filterClientId, $allowedClientsId);
 			}
-			$allowedProjects =  $this->projectMapper->findAll($this->userId);
-			$allowedProjectsId = array_map(function($project){ return $project->id;}, $allowedProjects );
+
 			if(empty($filterProjectId)){
 				$filterProjectId = $allowedProjectsId;
 				$filterProjectId[] = null; // allow null projectId
@@ -967,14 +977,24 @@ class AjaxController extends Controller {
 		if(!$this->isThisAdminUser()){
 			$allowedClients =  $this->clientMapper->findAll($this->userId);
 			$allowedClientsId = array_map(function($client){ return $client->id;}, $allowedClients );
+
+			$allowedProjects =  $this->projectMapper->findAll($this->userId);
+			$allowedProjectsId = array_map(function($project){ return $project->id;}, $allowedProjects );
+
+			// Implicitly allow clients of allowed projects
+			foreach ($allowedProjects as $project) {
+				if ($project->clientId !== null && !in_array($project->clientId, $allowedClientsId)) {
+					$allowedClientsId[] = $project->clientId;
+				}
+			}
+
 			if(empty($filterClientId)){
 				$filterClientId = $allowedClientsId;
 				$filterClientId[] = null; // allow null clientid
 			} else {
 				$filterClientId = array_intersect($filterClientId, $allowedClientsId);
 			}
-			$allowedProjects =  $this->projectMapper->findAll($this->userId);
-			$allowedProjectsId = array_map(function($project){ return $project->id;}, $allowedProjects );
+
 			if(empty($filterProjectId)){
 				$filterProjectId = $allowedProjectsId;
 				$filterProjectId[] = null; // allow null projectId

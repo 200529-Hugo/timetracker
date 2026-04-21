@@ -48,7 +48,7 @@ class WorkItemMapper extends CompatibleMapper {
 
     public function findAll($limit=null, $offset=null) {
         $sql = 'SELECT * FROM `*PREFIX*timetracker_work_item`';
-        return $this->findEntities($sql, $limit, $offset);
+        return $this->findEntities($sql, [], $limit, $offset);
     }
 
 }

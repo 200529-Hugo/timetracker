@@ -35,18 +35,18 @@ First get an account for the [App Store](http://apps.nextcloud.com/) then run:
 The archive is located in build/artifacts/appstore and can then be uploaded to the App Store.
 
 ## Running tests
-You can use the provided Makefile to run all tests by using:
+
+### PHP Tests
+You can run the full test suite (including integration tests) using the provided Makefile:
 
     make test
 
-This will run the PHP unit and integration tests and if a package.json is present in the **js/** folder will execute **npm run test**
+For faster, **isolated unit tests** that do not require a full Nextcloud installation, use the following command:
 
-Of course you can also install [PHPUnit](http://phpunit.de/getting-started.html) and use the configurations directly:
+    ./vendor/bin/phpunit -c phpunit.xml --bootstrap tests/unit-bootstrap.php
 
-    phpunit -c phpunit.xml
+### JavaScript Tests
+The app uses Jest for JavaScript unit testing. To run the JS tests:
 
-or:
-
-    phpunit -c phpunit.integration.xml
-
-for integration tests
+    cd js
+    npm test

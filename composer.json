@@ -8,8 +8,19 @@
             "name": "MTier Ltd."
         }
     ],
-    "require": {},
     "require-dev": {
-        "christophwurst/nextcloud": "^24.0"
+        "christophwurst/nextcloud": "^24.0",
+        "phpunit/phpunit": "^9.5",
+        "doctrine/dbal": "^2.13"
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\TimeTracker\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OCA\\TimeTracker\\Tests\\Unit\\": "tests/Unit/"
+        }
     }
 }
