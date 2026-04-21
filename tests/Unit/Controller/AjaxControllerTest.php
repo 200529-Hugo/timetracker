@@ -462,57 +462,46 @@ class AjaxControllerTest extends TestCase {
         $this->assertArrayHasKey('Tags', $response->getData());
     }
 
-    public function testGetReportWithMultipleSameNameProjectsAndTypoClientAccess() {
-        // SCENARIO:
-        // Project X (ID: 1, Name: "Project X", ClientID: 10) - User has Client access
-        // Project X (ID: 2, Name: "Project X", ClientID: 11) - Typo in Client name, User has NO Client access
-        // User has access to both PROJECTS but only CLIENT 10.
+    public function testGetReportIncludesVanishedEntriesInJsonResponse() {
+        // This test proves that the "vanished" entries (typo clients)
+        // now actually appear in the final response.
         
         \OC_User::$isAdmin = false;
         
-        $p1 = new Project();
-        $p1->id = 1;
-        $p1->name = "Project X";
-        $p1->clientId = 10;
+        // 1. Setup Projects: Project 2 has Client 11 (the "typo" client)
+        $p1 = new Project(); $p1->id = 1; $p1->clientId = 10;
+        $p2 = new Project(); $p2->id = 2; $p2->clientId = 11;
         
-        $p2 = new Project();
-        $p2->id = 2;
-        $p2->name = "Project X";
-        $p2->clientId = 11; // Typo client (e.g. "Client B ")
+        $this->projectMapper->method('findAll')->willReturn([$p1, $p2]);
+
+        // 2. Setup Clients: User only has explicit access to Client 10
+        $c1 = new Client(); $c1->id = 10;
+        $this->clientMapper->method('findAll')->willReturn([$c1]);
+
+        // 3. Setup Mapper Results: Simulate DB returning both items
+        $item1 = new \OCA\TimeTracker\Db\ReportItem();
+        $item1->id = 101; $item1->clientId = 10; $item1->client = 'Client 10';
         
-        // Mock allowed projects: user has access to BOTH projects
-        $this->projectMapper->expects($this->once())
-            ->method('findAll')
-            ->with($this->userId)
-            ->willReturn([$p1, $p2]);
+        $item2 = new \OCA\TimeTracker\Db\ReportItem();
+        $item2->id = 102; $item2->clientId = 11; $item2->client = 'Client 11 (Typo)';
 
-        // Mock allowed clients: user has access ONLY to Client 10
-        $c1 = new Client();
-        $c1->id = 10;
-        $this->clientMapper->expects($this->once())
-            ->method('findAll')
-            ->with($this->userId)
-            ->willReturn([$c1]);
-
-        // The expected behavior is that ReportItemMapper::report is called with:
-        // filterProjectId including [1, 2]
-        // AND filterClientId including [10, 11] (implicitly including Client 11 from Project 2)
         $this->reportItemMapper->expects($this->once())
             ->method('report')
             ->with(
-                $this->userId, // name
-                $this->anything(), // from
-                $this->anything(), // to
-                $this->callback(function($filter) {
-                    return in_array(1, $filter) && in_array(2, $filter); // Both projects allowed
-                }),
-                $this->callback(function($filter) {
-                    // BOTH clients should be in the filter now!
-                    return in_array(10, $filter) && in_array(11, $filter); 
-                })
+                $this->anything(), $this->anything(), $this->anything(),
+                $this->callback(function($p) { return in_array(2, $p); }), // Project 2 allowed
+                $this->callback(function($c) { return in_array(11, $c); }) // Client 11 allowed!
             )
-            ->willReturn([]);
+            ->willReturn([$item1, $item2]);
 
-        $this->controller->getReport();
+        // 4. Execute
+        $response = $this->controller->getReport();
+        $data = $response->getData();
+
+        // 5. Assert
+        $this->assertCount(2, $data['items']);
+        $this->assertEquals(101, $data['items'][0]['id']);
+        $this->assertEquals(102, $data['items'][1]['id']);
+        $this->assertEquals('Client 11 (Typo)', $data['items'][1]['client']);
     }
 }
